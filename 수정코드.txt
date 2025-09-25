@@ -1,0 +1,206 @@
+#include <Servo.h>
+
+// --- 핀 설정 ---
+const int SERVO_PIN = 9;
+const int BUTTON_PIN = 2;
+const int LDR_PIN = A0;
+const int BUZZER_PIN = 8;
+const int RED_LED_PIN = 4;
+const int GREEN_LED_PIN = 5;
+
+// --- 설정값 ---
+const int GATE_OPEN_ANGLE = 90;   // 차단기가 열렸을 때의 각도
+const int GATE_CLOSED_ANGLE = 0;  // 차단기가 닫혔을 때의 각도
+
+// ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
+// ※ 중요! 이 값을 시리얼 모니터로 확인하고 반드시 직접 조절해야 합니다! ※
+const int CAR_DETECT_THRESHOLD = 450; 
+// ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
+
+Servo gateServo;
+bool isGateOpen = false;    // 차단기가 열려있는가?
+bool isCarDetected = false; // 차가 감지되었는가?
+
+void setup() {
+  Serial.begin(9600); // 조도센서 값 확인용
+
+  // 핀 모드 설정
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(RED_LED_PIN, OUTPUT);
+  pinMode(GREEN_LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  // 서보모터 초기화
+  gateServo.attach(SERVO_PIN);
+  gateServo.write(GATE_CLOSED_ANGLE);
+
+  // 초기 상태 설정 (차단기 닫힘, 빨간불 켜짐)
+  digitalWrite(RED_LED_PIN, HIGH);
+  digitalWrite(GREEN_LED_PIN, LOW);
+}
+
+void loop() {
+  // 1. 버튼을 누르면 차단기 열기 (닫혀있을 때만 작동)
+  if (digitalRead(BUTTON_PIN) == LOW && !isGateOpen) {
+    openGate();
+  }
+
+  // 2. 차단기가 열려있을 때만 자동 닫힘 로직 실행
+  if (isGateOpen) {
+    int lightValue = analogRead(LDR_PIN);
+    Serial.println(lightValue); // 값 확인용
+
+    // 현재 차가 센서를 가리고 있는지 판단
+    bool carIsCurrentlyUnderSensor = (lightValue < CAR_DETECT_THRESHOLD);
+
+    // [상태1] 차가 없다가 처음으로 감지된 순간
+    if (carIsCurrentlyUnderSensor && !isCarDetected) {
+      isCarDetected = true; // "차가 감지됨" 상태로 변경
+      digitalWrite(GREEN_LED_PIN, LOW); // 초록불 끄기
+      digitalWrite(RED_LED_PIN, HIGH);  // 경고를 위해 빨간불 켜기
+      tone(BUZZER_PIN, 500, 100);     // 감지 알림음
+    }
+    
+    // [상태2] 차가 있다가 사라지는 순간 (통과 완료)
+    if (!carIsCurrentlyUnderSensor && isCarDetected) {
+      closeGate(); // 차단기를 닫는 함수 호출
+    }
+  }
+}
+
+// 차단기를 여는 함수
+void openGate() {
+  Serial.println("차단기 열림");
+  isGateOpen = true;
+  isCarDetected = false; // 상태 초기화
+  
+  digitalWrite(RED_LED_PIN, LOW);
+  digitalWrite(GREEN_LED_PIN, HIGH);
+  
+  // 부저음과 함께 서보모터 이동
+  for (int angle = GATE_CLOSED_ANGLE; angle <= GATE_OPEN_ANGLE; angle++) {
+    gateServo.write(angle);
+    tone(BUZZER_PIN, 1200, 20); // 올라갈 때 소리
+    delay(15);
+  }
+}
+
+// 차단기를 닫는 함수
+void closeGate() {
+  Serial.println("차단기 닫힘");
+  isGateOpen = false;
+  isCarDetected = false; // 상태 초기화
+
+  digitalWrite(GREEN_LED_PIN, LOW);
+ digitalWrite(RED_LED_PIN, HIGH);
+  
+  // 부저음과 함께 서보모터 이동
+  for (int angle = GATE_OPEN_ANGLE; angle >= GATE_CLOSED_ANGLE; angle--) {
+    gateServo.write(angle);
+    tone(BUZZER_PIN, 900, 20); // 내려갈 때 소리
+    delay(15);
+  }
+}
+#include <Servo.h>
+
+// --- 핀 설정 ---
+const int SERVO_PIN = 9;
+const int BUTTON_PIN = 2;
+const int LDR_PIN = A0;
+const int BUZZER_PIN = 8;
+const int RED_LED_PIN = 4;
+const int GREEN_LED_PIN = 5;
+
+// --- 설정값 ---
+const int GATE_OPEN_ANGLE = 90;   // 차단기가 열렸을 때의 각도
+const int GATE_CLOSED_ANGLE = 0;  // 차단기가 닫혔을 때의 각도
+
+// ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
+// ※ 중요! 이 값을 시리얼 모니터로 확인하고 반드시 직접 조절해야 합니다! ※
+const int CAR_DETECT_THRESHOLD = 450; 
+// ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
+
+Servo gateServo;
+bool isGateOpen = false;    // 차단기가 열려있는가?
+bool isCarDetected = false; // 차가 감지되었는가?
+
+void setup() {
+  Serial.begin(9600); // 조도센서 값 확인용
+
+  // 핀 모드 설정
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(RED_LED_PIN, OUTPUT);
+  pinMode(GREEN_LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  // 서보모터 초기화
+  gateServo.attach(SERVO_PIN);
+  gateServo.write(GATE_CLOSED_ANGLE);
+
+  // 초기 상태 설정 (차단기 닫힘, 빨간불 켜짐)
+  digitalWrite(RED_LED_PIN, HIGH);
+  digitalWrite(GREEN_LED_PIN, LOW);
+}
+
+void loop() {
+  // 1. 버튼을 누르면 차단기 열기 (닫혀있을 때만 작동)
+  if (digitalRead(BUTTON_PIN) == LOW && !isGateOpen) {
+    openGate();
+  }
+
+  // 2. 차단기가 열려있을 때만 자동 닫힘 로직 실행
+  if (isGateOpen) {
+    int lightValue = analogRead(LDR_PIN);
+    Serial.println(lightValue); // 값 확인용
+
+    // 현재 차가 센서를 가리고 있는지 판단
+    bool carIsCurrentlyUnderSensor = (lightValue < CAR_DETECT_THRESHOLD);
+
+    // [상태1] 차가 없다가 처음으로 감지된 순간
+    if (carIsCurrentlyUnderSensor && !isCarDetected) {
+      isCarDetected = true; // "차가 감지됨" 상태로 변경
+      digitalWrite(GREEN_LED_PIN, LOW); // 초록불 끄기
+      digitalWrite(RED_LED_PIN, HIGH);  // 경고를 위해 빨간불 켜기
+      tone(BUZZER_PIN, 500, 100);     // 감지 알림음
+    }
+    
+    // [상태2] 차가 있다가 사라지는 순간 (통과 완료)
+    if (!carIsCurrentlyUnderSensor && isCarDetected) {
+      closeGate(); // 차단기를 닫는 함수 호출
+    }
+  }
+}
+
+// 차단기를 여는 함수
+void openGate() {
+  Serial.println("차단기 열림");
+  isGateOpen = true;
+  isCarDetected = false; // 상태 초기화
+  
+  digitalWrite(RED_LED_PIN, LOW);
+  digitalWrite(GREEN_LED_PIN, HIGH);
+  
+  // 부저음과 함께 서보모터 이동
+  for (int angle = GATE_CLOSED_ANGLE; angle <= GATE_OPEN_ANGLE; angle++) {
+    gateServo.write(angle);
+    tone(BUZZER_PIN, 1200, 20); // 올라갈 때 소리
+    delay(15);
+  }
+}
+
+// 차단기를 닫는 함수
+void closeGate() {
+  Serial.println("차단기 닫힘");
+  isGateOpen = false;
+  isCarDetected = false; // 상태 초기화
+
+  digitalWrite(GREEN_LED_PIN, LOW);
+ digitalWrite(RED_LED_PIN, HIGH);
+  
+  // 부저음과 함께 서보모터 이동
+  for (int angle = GATE_OPEN_ANGLE; angle >= GATE_CLOSED_ANGLE; angle--) {
+    gateServo.write(angle);
+    tone(BUZZER_PIN, 900, 20); // 내려갈 때 소리
+    delay(15);
+  }
+}
